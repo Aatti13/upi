@@ -20,6 +20,20 @@ const accountSchema = new mongoose.Schema({
     type: String,
     default: 'Default Bank',
     required: true
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  accountType: {
+    type: String,
+    enum: ['savings', 'current', 'fixed'],
+    default: 'savings',
+    required: true
+  },
+  ifsCode: {
+    type: String,
+    default: 'IFSC0001',
   }
 }, {timestamps: true});
 
