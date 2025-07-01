@@ -33,5 +33,5 @@ export const passwordLengthCheck = (password)=>{
  *  It returns true if the phone number is invalid, otherwise false.
  */
 export const phoneNoValidation = (phoneNo)=>{
-  return phoneNo.length !== 10 || isNaN(phoneNo);
+  return phoneNo.toString().length !== 10;
 }

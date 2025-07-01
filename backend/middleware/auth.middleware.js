@@ -19,16 +19,17 @@ export const authenticateToken = async (req, res, next) => {
       return sendUnauthorizedResponse(res, 'Token has been invalidated');
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    const user = await User.findById(decoded.userId).select('-password');
-    if(!user || !user.isActive) {
-      return sendUnauthorizedResponse(res, 'User is either inactive or no longer exists');
-    }
-
-    req.user = user;
-    req.token = token;
-    next();
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+      if (err) {
+        return res.status(403).json({
+          success: false,
+          message: "Invalid or expired token"
+        });
+      }
+      req.user = user; // Add user info to request
+      req.token = token
+      next();
+    });
   }catch(error) {
     if (error.name === 'JsonWebTokenError') {
       return sendUnauthorizedResponse(res, 'Invalid Token');

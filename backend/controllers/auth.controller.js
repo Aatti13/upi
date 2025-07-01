@@ -64,10 +64,10 @@ export const login = async (req, res) => {
       return sendValidationError(res, 'All Fields are mandatory');
     }
 
-    const isPhoneNoValid = phoneNoValidation(phoneNo);
-    if(!isPhoneNoValid) {
-      return sendValidationError(res, 'Phone Number is invalid');
-    }
+    // const isPhoneNoValid = phoneNoValidation(phoneNo);
+    // if(!isPhoneNoValid) {
+    //   return sendValidationError(res, 'Phone Number is invalid');
+    // }
 
     const user = await User.findOne({phoneNo});
     if(!user||!user.isActive) {
@@ -103,7 +103,7 @@ export const logout = async (req, res)=>{
     if(!token) {
       return sendNotFoundResponse(res, 'Token not Found');
     }
-    
+
     const decoded = jwt.decode(token);
     const expiresAt = new Date(decoded.exp * 1000);
 
@@ -116,4 +116,4 @@ export const logout = async (req, res)=>{
   }catch(error) {
     return handleServerError(res, 500, 'Error Logging out', error.message);
   }
-}
+} 

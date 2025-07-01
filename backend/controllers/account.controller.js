@@ -1,3 +1,4 @@
+import { generateAccountNumber } from '../lib/generators/accountnumber.generator.js';
 import Account from '../models/account.model.js';
 import User from '../models/user.model.js';
 
@@ -14,13 +15,11 @@ import {
 export const createAccount = async (req, res) => {
   try {
     const { initialDeposit=0, bankName, accountType } = req.body;
-    const userId = req.user._id;
+    const userId = req.user.id || req.user._id || req.user.userId;
+    console.log(userId);
 
     const accountTypes = ['savings', 'current', 'fixed'];
 
-    if(!userId) {
-      return sendValidationError(res, 'Unexpected Error');
-    }
 
     if(!accountType || !accountTypes.includes(accountType)) {
       return sendValidationError(res, 'Invalid or Missing Account Type');
@@ -31,7 +30,7 @@ export const createAccount = async (req, res) => {
     }
 
     const newAccount = new Account({
-      userId,
+      userId: userId,
       balance: initialDeposit,
       bankName,
       accountType,
@@ -39,11 +38,11 @@ export const createAccount = async (req, res) => {
 
     await newAccount.save();
   }catch(error) {
-    return handleServerError(res, 'Internal Server Error');
+    return handleServerError(res, 500, 'Error Creating Account', error.message);
   }
 }
 
-const getAccountByUserID = async (req, res) => {
+export const getAccountByUserID = async (req, res) => {
   try {
     const userId = req.user._id || req.params.userId;
 
@@ -64,7 +63,7 @@ const getAccountByUserID = async (req, res) => {
   }
 }
 
-const getAccountByAccountNo = async (req, res) => {
+export const getAccountByAccountNo = async (req, res) => {
   try {
     const { accountNo } = req.params;
 

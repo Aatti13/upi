@@ -13,6 +13,6 @@ const blacklistedTokenSchema = new mongoose.Schema({
 }, {timestamps: true});
 
 blacklistedTokenSchema.index({expiresAt: 1}, {expireAfterSeconds: 0});
-const BlacklistedTokens = mongoose.model('BlacklistedToken', BlacklistedTokens);
+const BlacklistedTokens = mongoose.model('BlacklistedToken', blacklistedTokenSchema);
 
 export default BlacklistedTokens;
