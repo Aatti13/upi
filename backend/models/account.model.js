@@ -1,12 +1,12 @@
 import mongoose from 'mongoose';
 
 const accountSchema = new mongoose.Schema({
-  user: {
+  userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  accNo: {
+  accountNo: {
     type: String,
     required: true,
     unique: true,
@@ -28,7 +28,6 @@ const accountSchema = new mongoose.Schema({
   accountType: {
     type: String,
     enum: ['savings', 'current', 'fixed'],
-    default: 'savings',
     required: true
   },
   ifsCode: {
@@ -36,6 +35,15 @@ const accountSchema = new mongoose.Schema({
     default: 'IFSC0001',
   }
 }, {timestamps: true});
+
+accountSchema.pre('save', async function(next){
+  if(!this.accountNo) {
+    const timestamp = Date.now().toString();
+    const random = Math.floor(Math.random * 1000).toString().padStart(5, '0');
+    this.accountNumber = `BCMC${timestamp.slice(-8)}${random}`;
+  }
+  next();
+});
 
 const Account = mongoose.model('Account', accountSchema);
 

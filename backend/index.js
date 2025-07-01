@@ -11,6 +11,7 @@ import { connectDB } from './config/db.js';
 
 // Route Middleware Import
 import authRoutes from './routes/auth.routes.js';
+import accountRoutes from './routes/account.routes.js';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -25,6 +26,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // User-defined Middlewares
 app.use('/api/auth', authRoutes);
+app.use('/api/account', accountRoutes);
 
 // Driver Code
 app.listen(PORT, ()=>{

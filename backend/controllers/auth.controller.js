@@ -1,163 +1,119 @@
-// Pre-defined Libraries
-import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
-// User-defined Schema Objects
 import User from '../models/user.model.js';
+import BlacklistedToken from '../models/blacklistedmodel.model.js';
 
-// Validation Functions
-import { emailValidation, passwordLengthCheck, phoneNoValidation } from '../lib/validators/auth.validation.js';
+import { 
+  successResponse,
+  handleServerError,
+  sendValidationError,
+  sendUnauthorizedResponse,
+  sendForbiddenResponse,
+  sendNotFoundResponse,
+  sendConflictingResponse
+ } from '../utils/response.utils.js';
 
-// User-defined Error Handlers
-import { handleServerError } from '../lib/errorLog/error.status.js'
-import { successResponse } from '../lib/success/success.response.js';
+import { generateJWTToken } from '../lib/generators/accountnumber.generator.js';
+import { phoneNoValidation } from '../lib/validators/auth.validation.js';
 
-/**
- * 
- * @param {*} req 
- * @param {*} res 
- * @description This function handles user signup by validating the input data,
- * @async inputs: email, name, password, phoneNo
- * * It checks if the user already exists, hashes the password, and saves the new user to the database.
- * * @returns {Object} JSON response with user data and a success message or an error message.
- * 
- *
- */
 export const signup = async (req, res)=>{
-  try{
-    // Destructuring the request body to get user details
-    // Validating the input data
-    const { email, name, password, phoneNo } = req.body;
+  try {
+    const { name, email, password, phoneNo } = req.body;
 
-    // Check if all required fields are provided
-    // If any field is missing, return an error response
-    if(!email || !name || !password) {
-      return handleServerError(res, null, 401, 'All fields are required');
+    if(!name || !email || !password || !phoneNo) {
+      return sendValidationError(res, 'All fields are required');
     }
 
-    // Validate the email format, password length, and phone number format
-    // If any validation fails, return an error response
-    if(!emailValidation(email)) {
-      return handleServerError(res, null, 400, 'Invalid email format');
-    }
-
-    if(passwordLengthCheck(password)) {
-      return handleServerError(res, null, 400, 'Password must be at least 6 characters long');
-    }
-
-    if(phoneNoValidation(phoneNo)) {
-      return handleServerError(res, null, 400, 'Invalid phone number format');
-    }
-
-    // Check if a user with the provided email or phone number already exists
-    // If a user exists, return an error response
-    // If the email or phone number already exists, return an error response
-    // If both checks pass, proceed to create a new user
-    const existingUser = await User.findOne({email});
+    const existingUser = await User.findOne({ email });
     if(existingUser) {
-      return handleServerError(res, null, 409, 'User already exists');
+      return sendConflictingResponse(res, 'Email aready in use');
     }
 
-    const existingMobile = await User.findOne({phoneNo});
-    if(existingMobile) {
-      return handleServerError(res, null, 409, 'Mobile number already exists');
-    }
-
-    const salt = await bcrypt.genSalt(12);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const newUser = new User({
+    const user = new User({
       name,
       email,
-      password: hashedPassword,
+      password,
       phoneNo
     });
 
-    await newUser.save();
+    await user.save();
 
-    // Generate a JWT token for the new user
-    // The token will be used for authentication in subsequent requests
-    // The token will expire in 7 days
-    const token = jwt.sign({userId: newUser._id}, process.env.JWT_SECRET,{expiresIn: "7d"});
+    const token = generateJWTToken(user._id);
 
-    // Set the JWT token as a cookie in the response
-    // The cookie will be used for authentication in subsequent requests
-    // The cookie will expire in 7 days and is set to be HTTP-only and secure in production
-    res.cookie("jwt", token,{
-      maxAge: 7*24*60*60*1000,
-      httpOnly: true,
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production"
-    })
+    const userData = {
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phoneNo: user.phoneNo
+      },
+      token
+    };
 
-    // Return a success response with the new user data
-    // The response will include the user ID, name, email, and phone number
-    // The status code is set to 201 (Created) to indicate that a new resource has been created
-    return successResponse(res, { user: newUser }, 201, 'User created successfully');
-
+    return successResponse(res, 201, 'User Created Successfully', userData);
   }catch(error) {
-    return handleServerError(res, error, 500, 'Internal Server Error');
+    return handleServerError(res, error, 500, 'Invalid');
   }
 }
 
-export const login = async (req, res)=>{
+export const login = async (req, res) => {
   try {
     const { phoneNo, password } = req.body;
 
     if(!phoneNo || !password) {
-      return handleServerError(res, null, 401, 'All fields are required');
+      return sendValidationError(res, 'All Fields are mandatory');
     }
 
-    if(phoneNoValidation(phoneNo)) {
-      return handleServerError(res, null, 400, 'Invalid phone number format');
-    }
-    if(passwordLengthCheck(password)) {
-      return handleServerError(res, null, 400, 'Password must be at least 6 characters long');
+    const isPhoneNoValid = phoneNoValidation(phoneNo);
+    if(!isPhoneNoValid) {
+      return sendValidationError(res, 'Phone Number is invalid');
     }
 
-    const user = await User.findOne({ phoneNo });
-
-    if(!user) {
-      return handleServerError(res, null, 404, 'User not found');
+    const user = await User.findOne({phoneNo});
+    if(!user||!user.isActive) {
+      return sendUnauthorizedResponse(res, 'Invalid Credentials');
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await user.comparePassword(password);
     if(!isPasswordValid) {
-      return handleServerError(res, null, 401, 'Invalid password');
+      return sendUnauthorizedResponse(res, 'Invalid Credentials');
     }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    const token = generateJWTToken(user._id);
 
-    res.cookie("jwt", token, {
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      httpOnly: true,
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production"
-    });
+    const userData = {
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+      token
+    };
 
-    return successResponse(res, 
-      { 
-        user: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          phoneNo: user.phoneNo
-      }
-    }, 200, 'Login successful');
-  }catch(error) {
-    return handleServerError(res, error, 500, 'Internal Server Error');
+    return successResponse(res, 200, 'Login Successful', userData);
+  }catch (error) {
+    return handleServerError(res, 500, 'Error Logging in', error.message);
   }
 }
 
-export const logout = async (req, res) => {
+export const logout = async (req, res)=>{
   try {
-    res.clearCookie("jwt", {
-      httpOnly: true,
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production"
+    const token = req.token;
+
+    if(!token) {
+      return sendNotFoundResponse(res, 'Token not Found');
+    }
+    
+    const decoded = jwt.decode(token);
+    const expiresAt = new Date(decoded.exp * 1000);
+
+    await BlacklistedToken.create({
+      token,
+      expiresAt
     });
-    return successResponse(res, {}, 200, 'Logout successful');
-  }catch (error) {
-    return handleServerError(res, error);
+
+    return successResponse(res, 200, 'Logged out Successfully');
+  }catch(error) {
+    return handleServerError(res, 500, 'Error Logging out', error.message);
   }
 }
