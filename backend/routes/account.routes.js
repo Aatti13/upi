@@ -11,7 +11,7 @@ router.use(authenticateToken);
 
 router.post('/', createAccount);
 
-router.get('/user/userId', getAccountByUserID);
+router.get('/user/:userId', getAccountByUserID);
 router.get('/account-number/:accountNo', getAccountByAccountNo);
 
 router.put('/:accountId', updateAccount);

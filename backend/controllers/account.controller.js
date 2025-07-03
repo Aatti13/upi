@@ -14,7 +14,7 @@ import {
 
 export const createAccount = async (req, res) => {
   try {
-    const { initialDeposit=0, bankName, accountType } = req.body;
+    const { initialDeposit=0, bankName, accountType, ifsCode = 'IFSC0001' } = req.body;
     const userId = req.user.id || req.user._id || req.user.userId;
     console.log(userId);
 
@@ -29,14 +29,20 @@ export const createAccount = async (req, res) => {
       return sendValidationError(res, 'Initial Deposit cannot be negative');
     }
 
+    const accountNo = generateAccountNumber();
+
     const newAccount = new Account({
       userId: userId,
+      accountNo,
       balance: initialDeposit,
       bankName,
       accountType,
+      ifsCode
     });
 
     await newAccount.save();
+
+    return successResponse(res, 200, 'Account Created Successfully', newAccount);
   }catch(error) {
     return handleServerError(res, 500, 'Error Creating Account', error.message);
   }
@@ -46,12 +52,12 @@ export const getAccountByUserID = async (req, res) => {
   try {
     const userId = req.user._id || req.params.userId;
 
-    if(userId !== req.user._id.toString() && req.user.role !== 'admin') {
-      return sendForbiddenResponse(res, 'Access Denied');
-    }
+    // if(userId !== req.user._id && req.user.role !== 'admin') {
+    //   return sendForbiddenResponse(res, 'Access Denied');
+    // }
 
-    const accounts = await Account.find({ userId, isActive: true })
-    .populate('userId', 'name email phoneNo');
+    const accounts = await Account.find({ userId, isActive: true });
+    // .populate('userId', 'name email phoneNo');
 
     if(!accounts) {
       return sendNotFoundResponse(res, 'No Account(s) Found');
@@ -59,7 +65,7 @@ export const getAccountByUserID = async (req, res) => {
 
     return successResponse(res, 200, 'Accounts Retrieved Successfully', accounts);
   }catch(error) {
-    return handleServerError(res, 'Error Fetching Account Details', error.message);
+    return handleServerError(res, 500, 'Error Fetching Account Details', error.message);
   }
 }
 
@@ -71,7 +77,7 @@ export const getAccountByAccountNo = async (req, res) => {
       return sendValidationError(res, 'Account Number is mandatory');
     }
 
-    const account = await Account.findOne({ accountNo, isActive: true }).populate('userId', 'name email phoneNo');
+    const account = await Account.findOne({ accountNo, isActive: true });
 
     if(!account) {
       return sendNotFoundResponse(res, 'Account Not Found');
@@ -83,7 +89,7 @@ export const getAccountByAccountNo = async (req, res) => {
 
     return successResponse(res, 200, 'Account Found', account);
   }catch(error) {
-    return handleServerError(res, 'Invalid Server Error', error.message);
+    return handleServerError(res, 500, 'Invalid Server Error', error.message);
   }
 }
 

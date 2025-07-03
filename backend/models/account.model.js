@@ -35,14 +35,6 @@ const accountSchema = new mongoose.Schema({
   }
 }, {timestamps: true});
 
-accountSchema.pre('save', async function(next){
-  if(!this.accountNo) {
-    const timestamp = Date.now().toString();
-    const random = Math.floor(Math.random * 1000).toString().padStart(5, '0');
-    this.accountNumber = `BCMC${timestamp.slice(-8)}${random}`;
-  }
-  next();
-});
 
 const Account = mongoose.model('Account', accountSchema);
 
