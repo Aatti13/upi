@@ -1,6 +1,0 @@
-# Ignore node_modules directory
-/node_modules/
-
-# Ignore Environment Variables
-# This file contains sensitive information such as API keys and database credentials.
-.env*
