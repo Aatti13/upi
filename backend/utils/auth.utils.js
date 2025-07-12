@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import BlackListedToken from '../models/blacklisted.model';
 
 export class AuthUtils {
-  
+
   generateToken = (payload)=>{
     return jwt.sign(payload, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRES_IN,
@@ -69,5 +69,29 @@ export class AuthUtils {
       return null;
     }
     return authHeader.substring(7);
+  }
+
+  generateDeviceID = (userAgent, ipAddress)=>{
+    const timeStamp = new Date();
+    const randomBytes = crypto.randomBytes(16).toString('hex');
+    const fingerprint = crypto.createHash('sha256')
+      .update(userAgent+timeStamp+ipAddress)
+      .digest('hex')
+      .substring(0, 16);
+    
+    return `device_${fingerprint}${randomBytes}`;
+  }
+
+  extractDeviceFingerPrint = (req)=>{
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    const ipAddress = req.ip || req.connection.remoteAccess || 'unknown';
+    const acceptLanguage = req.headers['accept-language'] || 'unknown';
+    const acceptEncoding = req.headers['accept-encoding'] || 'unknown';
+    
+    return crypto.createHash('sha256')
+      .update(userAgent + ipAddress + acceptLanguage + acceptEncoding)
+      .digest('hex')
+      .substring(0, 32);
+
   }
 }

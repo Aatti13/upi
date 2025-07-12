@@ -60,11 +60,15 @@ class AuthController {
 
       await user.save();
 
-      const token = jwt.sign(
-        {userId: user._id},
-        process.env.JWT_SECRET,
-        {expiresIn: '7d'}
-      );
+      const tokenPayload = {
+        id: user._id,
+        firstName: user.firstName,
+        email: user.email,
+      };
+
+      const accessToken = this.authUtils.generateToken(tokenPayload);
+
+      const refreshToken = this.authUtils.generateRefreshToken(tokenPayload);
 
       return success(res, 'User Registered Successfully', {
         user: {
@@ -77,7 +81,8 @@ class AuthController {
           bankName: user.bankName,
           bankShortForm: user.getBankShortForm()
         },
-        token
+        accessToken,
+        refreshToken
       });
     }catch (error) {
       return serverError(res, error.message, 500);
