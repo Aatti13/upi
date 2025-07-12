@@ -1,0 +1,45 @@
+import jwt from 'jsonwebtoken';
+
+export const isValidName = (name)=>{
+  return /^[A-Za-z]+$/.test(name);
+}
+
+export const generateToken = (payload)=>{
+  return jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN,
+    issuer: 'upi=payments',
+    audience: 'user'
+  });
+}
+
+export const generateRefreshToken = (payload)=>{
+  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
+    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
+    issuer: 'upi-payments',
+    audience: 'user'
+  });
+}
+
+
+export const verifyToken = (token)=>{
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET);
+  }catch(error) {
+    throw new Error('Invalid Token');
+  }
+}
+
+export const verifyRefreshToken = (refreshToken)=>{
+  try{
+    return jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+  }catch(error) {
+    throw new Error('Invalid Refresh Token');
+  }
+}
+
+export const isTokenBlackListed = async ()
+/**
+ * f8G7nNxar3wYbOZKGSGvzeiSpUi0hxqFwflE2n7xOtqJFaVFzM0vp8uNt372
+ */
+
+ 
