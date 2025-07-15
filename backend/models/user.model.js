@@ -320,20 +320,6 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false
       }
-    },
-    transactionLimits: {
-      dailyLimit: {
-        type: Number,
-        default: 100000
-      },
-      monthlyLimit: {
-        type: Number,
-        default: 1000000
-      },
-      requireAuthForAmount: {
-        type: Number,
-        default: 5000
-      }
     }
   },
   activity: {
