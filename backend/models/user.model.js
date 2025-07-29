@@ -1,10 +1,33 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
+  _id: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: () => new mongoose.Types.ObjectId()
+  },
   userId: {
     type: String,
     trim: true,
     index: true
+  },
+
+  authentication: {
+    password: {
+      type: String,
+      required: true
+    },
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false
+    },
+    lastLogin: Date,
+    loginAttempts: {
+      type: Number,
+      min: 0,
+      default: 0,
+      max: 5
+    },
+    lockedUntil: Date
   },
 
   upi: {
@@ -135,21 +158,27 @@ const userSchema = new mongoose.Schema({
   device: {
     registeredDevices: [{
       deviceId: String,
-      fcmToken: String,
-      platform: {
+      deviceType: {
         type: String,
-        enum: ['android', 'ios', 'web']
+        enum: ['ANDROID', 'IOS', 'WEB']
       },
-      appVersion: String,
       deviceModel: String,
       osVersion: String,
-      isActive: Boolean,
-      isVerified: Boolean,
-      registeredAt: Date,
-      lastLoginAt: Date,
-      lastLoginIP: String,
-      deviceFingerPrint: String,
-      _id: mongoose.Types.ObjectId()
+      appVersion: String,
+      lastUsed: Date,
+      isActive: {
+        type: Boolean,
+        default: true
+      },
+      registeredAt: {
+        type: Date,
+        default: Date.now
+      }
+    }],
+    ipAddresses: [{
+      ip: String,
+      location: String,
+      lastUsed: Date
     }],
     maxDevices: {
       type: Number,
@@ -172,7 +201,10 @@ const userSchema = new mongoose.Schema({
       enum: ['light', 'dark', 'device'],
       default: 'light'
     },
-
+    timeZone: {
+      type: String,
+      default: 'Asia/Kolkata'
+    },
     notifications: {
       transactionAlerts: {
         push: {
@@ -313,7 +345,7 @@ const userSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true,
-  collection: 'user'
+  collection: 'users'
 });
 
 userSchema.createIndex({"profile.phone": 1}, {unique: true, sparse: true});
